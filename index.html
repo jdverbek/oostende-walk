@@ -9,6 +9,8 @@
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     
     <style>
         * {
@@ -148,13 +150,35 @@
             border-color: #FF6B35;
             color: #FF6B35;
         }
+        
+        /* Hide routing machine control panel */
+        .leaflet-routing-container {
+            display: none;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            font-size: 16px;
+            color: #0066CC;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading indicator -->
+    <div class="loading" id="loading">Calculating route...</div>
+    
     <!-- Info Card -->
-    <div class="info-card">
+    <div class="info-card" id="infoCard" style="display: none;">
         <h1>Oostende Walk</h1>
-        <div class="stats">6.4 km · 77 min walk</div>
+        <div class="stats" id="routeStats">Calculating...</div>
         <div class="locations">5 locations</div>
     </div>
     
@@ -162,10 +186,12 @@
     <div id="map"></div>
     
     <!-- Start Walking Button -->
-    <button class="start-button" onclick="startWalking()">Start Walking</button>
+    <button class="start-button" onclick="startWalking()" style="display: none;" id="startBtn">Start Walking</button>
     
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
     
     <script>
         // Route locations with real GPS coordinates
@@ -224,22 +250,46 @@
             maxZoom: 19
         }).addTo(map);
         
-        // Create route line coordinates
-        const routeCoords = locations.map(loc => [loc.lat, loc.lng]);
+        // Create waypoints for routing
+        const waypoints = locations.map(loc => L.latLng(loc.lat, loc.lng));
         
-        // Draw the route polyline with dashed style
-        const routeLine = L.polyline(routeCoords, {
-            color: '#0066CC',
-            weight: 4,
-            opacity: 0.8,
-            dashArray: '10, 10',
-            lineJoin: 'round'
+        // Create routing control with OSRM (follows roads)
+        const routingControl = L.Routing.control({
+            waypoints: waypoints,
+            router: L.Routing.osrmv1({
+                serviceUrl: 'https://router.project-osrm.org/route/v1',
+                profile: 'foot' // Walking route
+            }),
+            lineOptions: {
+                styles: [{
+                    color: '#0066CC',
+                    opacity: 0.8,
+                    weight: 5
+                }]
+            },
+            addWaypoints: false,
+            draggableWaypoints: false,
+            fitSelectedRoutes: true,
+            showAlternatives: false,
+            createMarker: function() { return null; } // We'll add custom markers
         }).addTo(map);
         
-        // Fit map to show entire route
-        map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+        // Listen for route calculation
+        routingControl.on('routesfound', function(e) {
+            const routes = e.routes;
+            const summary = routes[0].summary;
+            
+            // Update stats
+            const distanceKm = (summary.totalDistance / 1000).toFixed(1);
+            const timeMin = Math.round(summary.totalTime / 60);
+            
+            document.getElementById('routeStats').textContent = `${distanceKm} km · ${timeMin} min walk`;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('infoCard').style.display = 'block';
+            document.getElementById('startBtn').style.display = 'block';
+        });
         
-        // Add markers for each location
+        // Add custom markers for each location
         locations.forEach((location, index) => {
             // Determine marker color
             let markerClass = 'marker-label';
