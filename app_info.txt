@@ -1,0 +1,21 @@
+Oostende Walk - Web App
+
+Successfully created interactive web map showing:
+- All 5 locations marked with numbered circles (1-5)
+- Blue dashed route line connecting all locations in order
+- Markers color-coded: Green (start), Blue (middle), Orange (end)
+- Full street map of Oostende with OpenStreetMap
+- Route clearly visible along the coast and through the city
+- Interactive markers that show location details when clicked
+- "Start Walking" button to open Apple Maps
+- Optimized for iPhone Safari browser
+
+The route visualization shows the walking path from:
+1. Christinastraat (green marker, start)
+2. Koninginnelaan (blue marker)
+3. Langestraat (blue marker)
+4. Zeedijk Oostende (blue marker, along the beach)
+5. Edmond Laponstraat (orange marker, end)
+
+Total distance: 6.4 km
+Estimated time: 77 minutes
